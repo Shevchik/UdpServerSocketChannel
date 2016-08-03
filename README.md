@@ -1,5 +1,14 @@
-package udpserversocketchannel;
+# UdpServerSocketChannel:
 
+UDP ServerSocketChannel for https://github.com/netty/netty
+
+# License:
+
+GNU GPLv3
+
+# Usage example:
+
+```java
 import java.nio.charset.StandardCharsets;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -17,7 +26,6 @@ import udpserversocketchannel.eventloop.UdpEventLoopGroup;
 public class ExampleUdpServer {
 
 	public static void main(String[] args) {
-		System.setProperty("io.netty.eventLoopThreads", "2");
 		ServerBootstrap bootstrap = new ServerBootstrap()
 		.group(new NioEventLoopGroup(), new UdpEventLoopGroup())
 		.channel(NioUdpServerChannel.class)
@@ -55,3 +63,4 @@ public class ExampleUdpServer {
 	}
 
 }
+```
