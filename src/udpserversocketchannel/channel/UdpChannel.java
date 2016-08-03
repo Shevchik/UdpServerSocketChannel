@@ -99,8 +99,8 @@ public class UdpChannel extends AbstractChannel {
 	}
 
 	@Override
-	protected void doBind(SocketAddress arg0) throws Exception {
-        throw new UnsupportedOperationException();
+	protected void doBind(SocketAddress addr) throws Exception {
+		throw new UnsupportedOperationException();
 	}
 
 	private class UdpChannelUnsafe extends AbstractUnsafe {

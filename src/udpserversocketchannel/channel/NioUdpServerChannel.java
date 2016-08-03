@@ -50,9 +50,9 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 	}
 
 	@Override
-    protected DatagramChannel javaChannel() {
-        return (DatagramChannel) super.javaChannel();
-    }
+	protected DatagramChannel javaChannel() {
+		return (DatagramChannel) super.javaChannel();
+	}
 
 	@Override
 	public boolean isActive() {
@@ -102,9 +102,9 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 
 	@Override
 	protected int doReadMessages(List<Object> list) throws Exception {
-		DatagramChannel javaChannel = this.javaChannel();
-		if (this.allocHandle == null) {
-			this.allocHandle = this.config.getRecvByteBufAllocator().newHandle();
+		DatagramChannel javaChannel = javaChannel();
+		if (allocHandle == null) {
+			allocHandle = config.getRecvByteBufAllocator().newHandle();
 		}
 		ByteBuf buffer = allocHandle.allocate(config.getAllocator());
 		boolean release = true;
@@ -115,10 +115,10 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 			if (inetSocketAddress == null) {
 				return 0;
 			}
-            int n = internalNioBuffer.position() - position;
-            buffer.writerIndex(buffer.writerIndex() + n);
-            allocHandle.record(n);
-            release = false;
+			int n = internalNioBuffer.position() - position;
+			buffer.writerIndex(buffer.writerIndex() + n);
+			allocHandle.record(n);
+			release = false;
 			UdpChannel udpchannel = udpchannels.get(inetSocketAddress);
 			if (udpchannel == null) {
 				udpchannel = new UdpChannel(this, inetSocketAddress);
@@ -144,29 +144,29 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 	@Override
 	protected boolean doWriteMessage(Object msg, ChannelOutboundBuffer buffer) throws Exception {
 		DatagramPacket dpacket = (DatagramPacket) msg;
-        InetSocketAddress recipient = dpacket.recipient();
-        ByteBuf byteBuf = dpacket.content();
-	    int readableBytes = byteBuf.readableBytes();
-	    if (readableBytes == 0) {
-	        return true;
-	    }
-	    ByteBuffer internalNioBuffer = byteBuf.internalNioBuffer(byteBuf.readerIndex(), readableBytes);
-	    return javaChannel().send(internalNioBuffer, recipient) > 0;
+		InetSocketAddress recipient = dpacket.recipient();
+		ByteBuf byteBuf = dpacket.content();
+		int readableBytes = byteBuf.readableBytes();
+		if (readableBytes == 0) {
+			return true;
+		}
+		ByteBuffer internalNioBuffer = byteBuf.internalNioBuffer(byteBuf.readerIndex(), readableBytes);
+		return javaChannel().send(internalNioBuffer, recipient) > 0;
 	}
 
 	@Override
 	protected boolean doConnect(SocketAddress addr1, SocketAddress addr2) throws Exception {
-        throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	protected void doFinishConnect() throws Exception {
-        throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	protected void doDisconnect() throws Exception {
-        throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException();
 	}
 
 }
