@@ -39,7 +39,7 @@ public class UdpChannel extends AbstractChannel {
 		return config;
 	}
 
-	private boolean open = true;
+	private volatile boolean open = true;
 
 	@Override
 	public boolean isActive() {

@@ -90,7 +90,7 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 		javaChannel().close();
 	}
 
-	protected final LinkedHashMap<InetSocketAddress, UdpChannel> channels = new LinkedHashMap<>(250, 0.75F, true);
+	protected final LinkedHashMap<InetSocketAddress, UdpChannel> channels = new LinkedHashMap<>();
 
 	@Override
 	public void doRegister() throws Exception {
