@@ -8,12 +8,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.spi.SelectorProvider;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map.Entry;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.RecvByteBufAllocator;
@@ -92,21 +91,14 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 
 	protected final LinkedHashMap<InetSocketAddress, UdpChannel> channels = new LinkedHashMap<>();
 
-	@Override
-	public void doRegister() throws Exception {
-		super.doRegister();
-		//schedule task that cleans up closed channels every event loop tick, not the best solution, but at least no sync issues
+	public void removeChannel(Channel channel) {
 		eventLoop().submit(new Runnable() {
 			@Override
 			public void run() {
-				Iterator<Entry<InetSocketAddress, UdpChannel>> iterator = channels.entrySet().iterator();
-				while (iterator.hasNext()) {
-					Entry<InetSocketAddress, UdpChannel> entry = iterator.next();
-					if (!entry.getValue().isOpen()) {
-						iterator.remove();
-					}
+				InetSocketAddress remote = (InetSocketAddress) channel.remoteAddress();
+				if (channels.get(remote) == channel) {
+					channels.remove(remote);
 				}
-				eventLoop().submit(this);
 			}
 		});
 	}

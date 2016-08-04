@@ -54,6 +54,7 @@ public class UdpChannel extends AbstractChannel {
 	@Override
 	protected void doClose() throws Exception {
 		open = false;
+		serverchannel.removeChannel(this);
 	}
 
 	@Override
