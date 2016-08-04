@@ -12,6 +12,8 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import udpserversocketchannel.eventloop.UdpEventLoop;
 
 public class UdpChannel extends AbstractChannel {
@@ -52,7 +54,6 @@ public class UdpChannel extends AbstractChannel {
 	@Override
 	protected void doClose() throws Exception {
 		open = false;
-		serverchannel.closeChannel(this);
 	}
 
 	@Override
@@ -74,8 +75,17 @@ public class UdpChannel extends AbstractChannel {
 
 	@Override
 	protected void doWrite(ChannelOutboundBuffer buffer) throws Exception {
-		ByteBuf buf = (ByteBuf) buffer.current();
-		serverchannel.writeAndFlush(new DatagramPacket(buf, this.remote));
+		ByteBuf buf = ((ByteBuf) buffer.current()).retain();
+		serverchannel.writeAndFlush(new DatagramPacket(buf, this.remote)).addListener(new FutureListener<Object>() {
+			@Override
+			public void operationComplete(Future<Object> f) throws Exception {
+				if (f.isSuccess()) {
+					buffer.remove();
+				} else {
+					buffer.remove(f.cause());
+				}
+			}
+		});
 	}
 
 	@Override

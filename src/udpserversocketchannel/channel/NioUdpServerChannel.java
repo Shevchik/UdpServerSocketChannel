@@ -8,8 +8,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.spi.SelectorProvider;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map.Entry;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelMetadata;
@@ -26,12 +28,8 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 	private final ChannelMetadata metadata = new ChannelMetadata(true);
 	private final UdpServerChannelConfig config;
 
-	private static DatagramChannel newSocket() throws IOException {
-		return SelectorProvider.provider().openDatagramChannel(StandardProtocolFamily.INET);
-	}
-
 	public NioUdpServerChannel() throws IOException {
-		this(newSocket());
+		this(SelectorProvider.provider().openDatagramChannel(StandardProtocolFamily.INET));
 	}
 
 	protected NioUdpServerChannel(DatagramChannel dchannel) {
@@ -84,18 +82,33 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 		javaChannel().socket().bind(addr);
 	}
 
-	private final ConcurrentHashMap<InetSocketAddress, UdpChannel> udpchannels = new ConcurrentHashMap<>();
-
 	@Override
 	protected void doClose() throws Exception {
-		for (UdpChannel channel : udpchannels.values()) {
-			channel.close().syncUninterruptibly();
+		for (UdpChannel channel : channels.values()) {
+			channel.close();
 		}
 		javaChannel().close();
 	}
 
-	public void closeChannel(UdpChannel udpChannel) {
-		udpchannels.remove(udpChannel.remoteAddress());
+	protected final LinkedHashMap<InetSocketAddress, UdpChannel> channels = new LinkedHashMap<>(250, 0.75F, true);
+
+	@Override
+	public void doRegister() throws Exception {
+		super.doRegister();
+		//schedule task that cleans up closed channels every event loop tick, not the best solution, but at least no sync issues
+		eventLoop().submit(new Runnable() {
+			@Override
+			public void run() {
+				Iterator<Entry<InetSocketAddress, UdpChannel>> iterator = channels.entrySet().iterator();
+				while (iterator.hasNext()) {
+					Entry<InetSocketAddress, UdpChannel> entry = iterator.next();
+					if (!entry.getValue().isOpen()) {
+						iterator.remove();
+					}
+				}
+				eventLoop().submit(this);
+			}
+		});
 	}
 
 	private RecvByteBufAllocator.Handle allocHandle;
@@ -109,6 +122,7 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 		ByteBuf buffer = allocHandle.allocate(config.getAllocator());
 		boolean release = true;
 		try {
+			//read message
 			ByteBuffer internalNioBuffer = buffer.internalNioBuffer(buffer.writerIndex(), buffer.writableBytes());
 			int position = internalNioBuffer.position();
 			InetSocketAddress inetSocketAddress = (InetSocketAddress) javaChannel.receive(internalNioBuffer);
@@ -119,10 +133,11 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 			buffer.writerIndex(buffer.writerIndex() + n);
 			allocHandle.record(n);
 			release = false;
-			UdpChannel udpchannel = udpchannels.get(inetSocketAddress);
-			if (udpchannel == null) {
+			//allocate new channel or use existing one and push message to it
+			UdpChannel udpchannel = channels.get(inetSocketAddress);
+			if (udpchannel == null || !udpchannel.isOpen()) {
 				udpchannel = new UdpChannel(this, inetSocketAddress);
-				udpchannels.put(inetSocketAddress, udpchannel);
+				channels.put(inetSocketAddress, udpchannel);
 				list.add(udpchannel);
 				udpchannel.setReceivedData(buffer);
 				return 1;
