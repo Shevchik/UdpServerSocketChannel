@@ -62,13 +62,16 @@ public class UdpChannel extends AbstractChannel {
 		doClose();
 	}
 
-	private ByteBuf buffer;
+	private volatile ByteBuf buffer;
 	public void setReceivedData(ByteBuf buffer) {
 		this.buffer = buffer;
 	}
 
 	@Override
 	protected void doBeginRead() throws Exception {
+		if (buffer == null) {
+			return;
+		}
 		ByteBuf data = buffer;
 		buffer = null;
 		pipeline().fireChannelRead(data);

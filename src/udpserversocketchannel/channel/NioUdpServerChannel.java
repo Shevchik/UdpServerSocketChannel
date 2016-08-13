@@ -12,10 +12,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
-import io.netty.channel.RecvByteBufAllocator;
 import io.netty.channel.nio.AbstractNioMessageChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.ServerSocketChannel;
@@ -103,28 +103,18 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 		});
 	}
 
-	private RecvByteBufAllocator.Handle allocHandle;
-
 	@Override
 	protected int doReadMessages(List<Object> list) throws Exception {
 		DatagramChannel javaChannel = javaChannel();
-		if (allocHandle == null) {
-			allocHandle = config.getRecvByteBufAllocator().newHandle();
-		}
-		ByteBuf buffer = allocHandle.allocate(config.getAllocator());
-		boolean release = true;
 		try {
 			//read message
-			ByteBuffer internalNioBuffer = buffer.internalNioBuffer(buffer.writerIndex(), buffer.writableBytes());
-			int position = internalNioBuffer.position();
-			InetSocketAddress inetSocketAddress = (InetSocketAddress) javaChannel.receive(internalNioBuffer);
+			ByteBuffer nioBuffer = ByteBuffer.allocateDirect(config.getReceiveBufferSize());
+			ByteBuf buffer = Unpooled.wrappedBuffer(nioBuffer);
+			InetSocketAddress inetSocketAddress = (InetSocketAddress) javaChannel.receive(nioBuffer);
+			buffer.writerIndex(nioBuffer.position());
 			if (inetSocketAddress == null) {
 				return 0;
 			}
-			int n = internalNioBuffer.position() - position;
-			buffer.writerIndex(buffer.writerIndex() + n);
-			allocHandle.record(n);
-			release = false;
 			//allocate new channel or use existing one and push message to it
 			UdpChannel udpchannel = channels.get(inetSocketAddress);
 			if (udpchannel == null || !udpchannel.isOpen()) {
@@ -142,9 +132,6 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 			PlatformDependent.throwException(t);
 			return -1;
 		} finally {
-			if (release) {
-				buffer.release();
-			}
 		}
 	}
 
