@@ -78,7 +78,7 @@ public class UdpChannel extends AbstractChannel {
 	}
 
 	@Override
-	protected void doWrite(ChannelOutboundBuffer buffer) throws Exception {
+	protected void doWrite(final ChannelOutboundBuffer buffer) throws Exception {
 		ByteBuf buf = ((ByteBuf) buffer.current()).retain();
 		serverchannel.writeAndFlush(new DatagramPacket(buf, this.remote)).addListener(new FutureListener<Object>() {
 			@Override

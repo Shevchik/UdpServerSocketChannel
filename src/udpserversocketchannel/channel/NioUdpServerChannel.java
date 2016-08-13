@@ -91,7 +91,7 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 
 	protected final LinkedHashMap<InetSocketAddress, UdpChannel> channels = new LinkedHashMap<>();
 
-	public void removeChannel(Channel channel) {
+	public void removeChannel(final Channel channel) {
 		eventLoop().submit(new Runnable() {
 			@Override
 			public void run() {

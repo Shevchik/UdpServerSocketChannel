@@ -1,5 +1,6 @@
 # Build Folders #
 bin/
+libs/
 build/
 target/
 .externalToolBuilders/
