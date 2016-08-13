@@ -2,6 +2,10 @@
 
 UDP ServerSocketChannel for https://github.com/netty/netty
 
+# Jenkins:
+
+http://build.true-games.org/view/ProtocolSupport/job/UdpServerSocketChannel/
+
 # License:
 
 GNU GPLv3
