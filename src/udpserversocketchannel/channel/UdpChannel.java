@@ -6,22 +6,21 @@ import java.net.SocketAddress;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.AbstractChannel;
 import io.netty.channel.ChannelConfig;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.DatagramPacket;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import udpserversocketchannel.eventloop.UdpEventLoop;
 
 public class UdpChannel extends AbstractChannel {
 
-	private final ChannelMetadata metadata = new ChannelMetadata(false);
-	private final DefaultChannelConfig config = new DefaultChannelConfig(this);
+	protected final ChannelMetadata metadata = new ChannelMetadata(false);
+	protected final DefaultChannelConfig config = new DefaultChannelConfig(this);
 	protected final NioUdpServerChannel serverchannel;
-	private final InetSocketAddress remote;
+	protected final InetSocketAddress remote;
 
 	protected UdpChannel(NioUdpServerChannel serverchannel, InetSocketAddress remote) {
 		super(serverchannel);
@@ -80,16 +79,12 @@ public class UdpChannel extends AbstractChannel {
 	@Override
 	protected void doWrite(final ChannelOutboundBuffer buffer) throws Exception {
 		ByteBuf buf = ((ByteBuf) buffer.current()).retain();
-		serverchannel.writeAndFlush(new DatagramPacket(buf, this.remote)).addListener(new FutureListener<Object>() {
-			@Override
-			public void operationComplete(Future<Object> f) throws Exception {
-				if (f.isSuccess()) {
-					buffer.remove();
-				} else {
-					buffer.remove(f.cause());
-				}
-			}
-		});
+		ChannelFuture sendfuture = serverchannel.writeAndFlush(new DatagramPacket(buf, this.remote)).sync();
+		if (sendfuture.isSuccess()) {
+			buffer.remove();
+		} else {
+			buffer.remove(sendfuture.cause());
+		}
 	}
 
 	@Override
