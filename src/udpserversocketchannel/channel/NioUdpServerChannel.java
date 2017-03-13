@@ -32,7 +32,7 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 	}
 
 	protected NioUdpServerChannel(DatagramChannel dchannel) {
-		super(null, dchannel, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+		super(null, dchannel, SelectionKey.OP_READ);
 		this.config = new UdpServerChannelConfig(this, dchannel);
 	}
 
