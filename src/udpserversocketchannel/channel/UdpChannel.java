@@ -12,8 +12,8 @@ import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
+import io.netty.channel.local.LocalEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
-import udpserversocketchannel.eventloop.UdpEventLoop;
 
 public class UdpChannel extends AbstractChannel {
 
@@ -90,7 +90,7 @@ public class UdpChannel extends AbstractChannel {
 
 	@Override
 	protected boolean isCompatible(EventLoop eventloop) {
-		return eventloop instanceof UdpEventLoop;
+		return eventloop instanceof LocalEventLoopGroup;
 	}
 
 	@Override
