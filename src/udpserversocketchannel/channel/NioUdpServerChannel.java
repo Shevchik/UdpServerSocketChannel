@@ -12,10 +12,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
+import io.netty.channel.RecvByteBufAllocator;
 import io.netty.channel.nio.AbstractNioMessageChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.ServerSocketChannel;
@@ -103,18 +103,31 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 		});
 	}
 
+	private RecvByteBufAllocator.Handle recvAllocatorHandle = null;
+	private RecvByteBufAllocator.Handle getRecvAllocatorHandle() {
+		if (recvAllocatorHandle == null) {
+			recvAllocatorHandle = config.getRecvByteBufAllocator().newHandle();
+		}
+		return recvAllocatorHandle;
+	}
+
 	@Override
 	protected int doReadMessages(List<Object> list) throws Exception {
 		DatagramChannel javaChannel = javaChannel();
+		RecvByteBufAllocator.Handle allocatorHandle = getRecvAllocatorHandle();
+		ByteBuf buffer = allocatorHandle.allocate(config.getAllocator());
+		boolean freeBuffer = true;
 		try {
 			//read message
-			ByteBuffer nioBuffer = ByteBuffer.allocateDirect(config.getReceiveBufferSize());
-			ByteBuf buffer = Unpooled.wrappedBuffer(nioBuffer);
+			ByteBuffer nioBuffer = buffer.internalNioBuffer(buffer.writerIndex(), buffer.writableBytes());
+			int nioPos = nioBuffer.position();
 			InetSocketAddress inetSocketAddress = (InetSocketAddress) javaChannel.receive(nioBuffer);
-			buffer.writerIndex(nioBuffer.position());
 			if (inetSocketAddress == null) {
 				return 0;
 			}
+			int recvBytes = nioBuffer.position() - nioPos;
+			buffer.writerIndex(buffer.writerIndex() + recvBytes);
+			allocatorHandle.record(recvBytes);
 			//allocate new channel or use existing one and push message to it
 			UdpChannel udpchannel = channels.get(inetSocketAddress);
 			if (udpchannel == null || !udpchannel.isOpen()) {
@@ -122,9 +135,11 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 				channels.put(inetSocketAddress, udpchannel);
 				list.add(udpchannel);
 				udpchannel.setReceivedData(buffer);
+				freeBuffer = false;
 				return 1;
 			} else {
 				udpchannel.setReceivedData(buffer);
+				freeBuffer = false;
 				udpchannel.read();
 				return 0;
 			}
@@ -132,6 +147,9 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 			PlatformDependent.throwException(t);
 			return -1;
 		} finally {
+			if (freeBuffer) {
+				buffer.release();
+			}
 		}
 	}
 
