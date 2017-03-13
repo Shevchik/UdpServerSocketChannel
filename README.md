@@ -22,16 +22,16 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.local.LocalEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import udpserversocketchannel.channel.NioUdpServerChannel;
+import udpserversocketchannel.eventloop.UdpEventLoopGroup;
 
 public class ExampleUdpServer {
 
 	public static void main(String[] args) {
 		ServerBootstrap bootstrap = new ServerBootstrap()
-		.group(new NioEventLoopGroup(), new LocalEventLoopGroup())
+		.group(new NioEventLoopGroup(), new UdpEventLoopGroup())
 		.channel(NioUdpServerChannel.class)
 		.childHandler(new ChannelInitializer<Channel>() {
 			@Override
