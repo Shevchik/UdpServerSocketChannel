@@ -74,6 +74,7 @@ public class UdpChannel extends AbstractChannel {
 		ByteBuf data = buffer;
 		buffer = null;
 		pipeline().fireChannelRead(data);
+		pipeline().fireChannelReadComplete();
 	}
 
 	@Override
