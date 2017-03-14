@@ -81,7 +81,7 @@ public class UdpChannel extends AbstractChannel {
 	@Override
 	protected void doWrite(ChannelOutboundBuffer buffer) throws Exception {
 		//transfer all messages that are ready to be written to list
-		RecyclableArrayList list = RecyclableArrayList.newInstance();
+		final RecyclableArrayList list = RecyclableArrayList.newInstance();
 		boolean freeList = true;
 		try {
 			ByteBuf buf = null;
