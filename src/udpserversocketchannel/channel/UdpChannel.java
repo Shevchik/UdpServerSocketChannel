@@ -6,13 +6,14 @@ import java.net.SocketAddress;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.AbstractChannel;
 import io.netty.channel.ChannelConfig;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.util.ReferenceCountUtil;
+import io.netty.util.internal.RecyclableArrayList;
 import udpserversocketchannel.eventloop.UdpEventLoop;
 
 public class UdpChannel extends AbstractChannel {
@@ -78,14 +79,39 @@ public class UdpChannel extends AbstractChannel {
 	}
 
 	@Override
-	protected void doWrite(final ChannelOutboundBuffer buffer) throws Exception {
-		ByteBuf buf = ((ByteBuf) buffer.current()).retain();
-		ChannelFuture sendfuture = serverchannel.writeAndFlush(new DatagramPacket(buf, this.remote)).sync();
-		if (sendfuture.isSuccess()) {
-			buffer.remove();
-		} else {
-			buffer.remove(sendfuture.cause());
+	protected void doWrite(ChannelOutboundBuffer buffer) throws Exception {
+		//transfer all messages that are ready to be written to list
+		RecyclableArrayList list = RecyclableArrayList.newInstance();
+		boolean freeList = true;
+		try {
+			ByteBuf buf = null;
+			while ((buf = (ByteBuf) buffer.current()) != null) {
+				list.add(buf.retain());
+				buffer.remove();
+			}
+			freeList = false;
+		} finally {
+			if (freeList) {
+				for (Object obj : list) {
+					ReferenceCountUtil.safeRelease(obj);
+				}
+				list.recycle();
+			}
 		}
+		//schedule a task that will write those entries
+		serverchannel.eventLoop().execute(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					for (Object buf : list) {
+						serverchannel.unsafe().write(new DatagramPacket((ByteBuf) buf, remote), voidPromise());
+					}
+					serverchannel.unsafe().flush();
+				} finally {
+					list.recycle();
+				}
+			}
+		});
 	}
 
 	@Override
