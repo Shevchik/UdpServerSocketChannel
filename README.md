@@ -8,7 +8,7 @@ http://build.true-games.org/view/ProtocolSupport/job/UdpServerSocketChannel/
 
 # License:
 
-GNU GPLv3
+GNU LGPLv3
 
 # Usage example:
 
