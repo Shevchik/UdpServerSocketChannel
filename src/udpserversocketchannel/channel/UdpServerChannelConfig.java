@@ -9,6 +9,7 @@ import io.netty.channel.ChannelException;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.MessageSizeEstimator;
 import io.netty.channel.RecvByteBufAllocator;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.socket.ServerSocketChannelConfig;
 
 public class UdpServerChannelConfig extends DefaultChannelConfig implements ServerSocketChannelConfig {
@@ -59,6 +60,7 @@ public class UdpServerChannelConfig extends DefaultChannelConfig implements Serv
 	}
 
 	@Override
+	@Deprecated
 	public ServerSocketChannelConfig setMaxMessagesPerRead(int n) {
 		super.setMaxMessagesPerRead(n);
 		return this;
@@ -74,6 +76,18 @@ public class UdpServerChannelConfig extends DefaultChannelConfig implements Serv
 	public ServerSocketChannelConfig setWriteSpinCount(int spincount) {
 		super.setWriteSpinCount(spincount);
 		return this;
+	}
+
+	public ServerSocketChannelConfig setWriteBufferHighWaterMark(int writeBufferHighWaterMark) {
+		return (ServerSocketChannelConfig) super.setWriteBufferHighWaterMark(writeBufferHighWaterMark);
+	}
+
+	public ServerSocketChannelConfig setWriteBufferLowWaterMark(int writeBufferLowWaterMark) {
+		return (ServerSocketChannelConfig) super.setWriteBufferLowWaterMark(writeBufferLowWaterMark);
+	}
+
+	public ServerSocketChannelConfig setWriteBufferWaterMark(WriteBufferWaterMark writeBufferWaterMark) {
+		return (ServerSocketChannelConfig) super.setWriteBufferWaterMark(writeBufferWaterMark);
 	}
 
 	@Override

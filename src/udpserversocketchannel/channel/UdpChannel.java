@@ -10,11 +10,11 @@ import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
+import io.netty.channel.DefaultEventLoop;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.RecyclableArrayList;
-import udpserversocketchannel.eventloop.UdpEventLoop;
 
 public class UdpChannel extends AbstractChannel {
 
@@ -116,7 +116,7 @@ public class UdpChannel extends AbstractChannel {
 
 	@Override
 	protected boolean isCompatible(EventLoop eventloop) {
-		return eventloop instanceof UdpEventLoop;
+		return eventloop instanceof DefaultEventLoop;
 	}
 
 	@Override
@@ -143,6 +143,7 @@ public class UdpChannel extends AbstractChannel {
 
 		@Override
 		public void connect(SocketAddress addr1, SocketAddress addr2, ChannelPromise pr) {
+			throw new UnsupportedOperationException();
 		}
 
 	}

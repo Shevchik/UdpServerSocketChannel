@@ -103,19 +103,13 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 		});
 	}
 
-	private RecvByteBufAllocator.Handle recvAllocatorHandle = null;
-	private RecvByteBufAllocator.Handle getRecvAllocatorHandle() {
-		if (recvAllocatorHandle == null) {
-			recvAllocatorHandle = config.getRecvByteBufAllocator().newHandle();
-		}
-		return recvAllocatorHandle;
-	}
-
+	@SuppressWarnings("deprecation")
 	@Override
 	protected int doReadMessages(List<Object> list) throws Exception {
 		DatagramChannel javaChannel = javaChannel();
-		RecvByteBufAllocator.Handle allocatorHandle = getRecvAllocatorHandle();
+		RecvByteBufAllocator.Handle allocatorHandle = unsafe().recvBufAllocHandle();
 		ByteBuf buffer = allocatorHandle.allocate(config.getAllocator());
+		allocatorHandle.attemptedBytesRead(buffer.writableBytes());
 		boolean freeBuffer = true;
 		try {
 			//read message
@@ -125,9 +119,8 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 			if (inetSocketAddress == null) {
 				return 0;
 			}
-			int recvBytes = nioBuffer.position() - nioPos;
-			buffer.writerIndex(buffer.writerIndex() + recvBytes);
-			allocatorHandle.record(recvBytes);
+			allocatorHandle.lastBytesRead(nioBuffer.position() - nioPos);
+			buffer.writerIndex(buffer.writerIndex() + allocatorHandle.lastBytesRead());
 			//allocate new channel or use existing one and push message to it
 			UdpChannel udpchannel = channels.get(inetSocketAddress);
 			if (udpchannel == null || !udpchannel.isOpen()) {
