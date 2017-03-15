@@ -1,0 +1,38 @@
+plugins {
+	id 'java'
+}
+
+group 'udpserversocketchannel'
+version '1.0'
+
+sourceCompatibility = 1.7
+
+compileJava.dependsOn(clean)
+
+sourceSets {
+	main {
+		java {
+			srcDirs = ['src']
+		}
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	compile group: 'io.netty', name: 'netty-all', version: '4.1.9.Final'
+}
+
+jar {
+	doFirst {
+		new File(destinationDir, archiveName).delete()
+	}
+
+	from sourceSets.main.java.srcDirs
+	from 'LICENSE'
+
+	destinationDir = file('target')
+	archiveName = 'UdpServerSocketChannel.jar'
+}
