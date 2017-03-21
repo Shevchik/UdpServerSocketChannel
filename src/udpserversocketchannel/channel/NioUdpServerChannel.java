@@ -123,17 +123,19 @@ public class NioUdpServerChannel extends AbstractNioMessageChannel implements Se
 			buffer.writerIndex(buffer.writerIndex() + allocatorHandle.lastBytesRead());
 			//allocate new channel or use existing one and push message to it
 			UdpChannel udpchannel = channels.get(inetSocketAddress);
-			if (udpchannel == null || !udpchannel.isOpen()) {
+			if ((udpchannel == null) || !udpchannel.isOpen()) {
 				udpchannel = new UdpChannel(this, inetSocketAddress);
 				channels.put(inetSocketAddress, udpchannel);
 				list.add(udpchannel);
-				udpchannel.setReceivedData(buffer);
+				udpchannel.addBuffer(buffer);
 				freeBuffer = false;
 				return 1;
 			} else {
-				udpchannel.setReceivedData(buffer);
+				udpchannel.addBuffer(buffer);
 				freeBuffer = false;
-				udpchannel.read();
+				if (udpchannel.isRegistered()) {
+					udpchannel.read();
+				}
 				return 0;
 			}
 		} catch (Throwable t) {

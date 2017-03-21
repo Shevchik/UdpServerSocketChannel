@@ -2,6 +2,7 @@ package udpserversocketchannel.channel;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.AbstractChannel;
@@ -62,20 +63,30 @@ public class UdpChannel extends AbstractChannel {
 		doClose();
 	}
 
-	private volatile ByteBuf buffer;
-	public void setReceivedData(ByteBuf buffer) {
-		this.buffer = buffer;
+	private final ConcurrentLinkedQueue<ByteBuf> buffers = new ConcurrentLinkedQueue<>();
+
+	protected void addBuffer(ByteBuf buffer) {
+		buffers.add(buffer);
 	}
+
+	private boolean reading = false;
 
 	@Override
 	protected void doBeginRead() throws Exception {
-		if (buffer == null) {
+		//is reading check, because the pipeline head context will call read again
+		if (reading) {
 			return;
 		}
-		ByteBuf data = buffer;
-		buffer = null;
-		pipeline().fireChannelRead(data);
-		pipeline().fireChannelReadComplete();
+		reading = true;
+		try {
+			ByteBuf buffer = null;
+			while ((buffer = buffers.poll()) != null) {
+				pipeline().fireChannelRead(buffer);
+			}
+			pipeline().fireChannelReadComplete();
+		} finally {
+			reading = false;
+		}
 	}
 
 	@Override

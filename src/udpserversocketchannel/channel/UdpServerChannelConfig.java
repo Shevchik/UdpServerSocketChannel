@@ -7,6 +7,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelException;
 import io.netty.channel.DefaultChannelConfig;
+import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.MessageSizeEstimator;
 import io.netty.channel.RecvByteBufAllocator;
 import io.netty.channel.WriteBufferWaterMark;
@@ -14,11 +15,14 @@ import io.netty.channel.socket.ServerSocketChannelConfig;
 
 public class UdpServerChannelConfig extends DefaultChannelConfig implements ServerSocketChannelConfig {
 
+	private static final RecvByteBufAllocator recv_allocator = new FixedRecvByteBufAllocator(2048);
+
 	private final DatagramChannel dchannel;
 
 	public UdpServerChannelConfig(Channel channel, DatagramChannel dchannel) {
 		super(channel);
 		this.dchannel = dchannel;
+		setRecvByteBufAllocator(recv_allocator);
 	}
 
 	@Override
