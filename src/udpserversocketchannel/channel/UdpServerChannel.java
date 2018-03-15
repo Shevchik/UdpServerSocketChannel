@@ -91,7 +91,7 @@ public class UdpServerChannel extends AbstractServerChannel {
 	}
 
 	protected void doWrite(RecyclableArrayList list, InetSocketAddress remote) {
-		Channel ioChannel = ioChannels.get(remote.hashCode() % ioChannels.size());
+		Channel ioChannel = ioChannels.get(remote.hashCode() & (ioChannels.size() - 1));
 		ioChannel.eventLoop().execute(() -> {
 			try {
 				for (Object buf : list) {
